@@ -1,0 +1,24 @@
+{
+  "name": "puppeteer-soso",
+  "version": "1.0.0",
+  "description": "use puppeteer to do something",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DMQ/puppeteer-soso.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "es6": "node ./src/run.js ryf-es6",
+    "sf": "node ./src/run.js segmentfault",
+    "crawl": "node ./src/run.js ryf-es6 segmentfault"
+  },
+  "author": "kindeng",
+  "license": "ISC",
+  "engines": {
+    "node": ">= 7.6.0"
+  },
+  "dependencies": {
+    "puppeteer": "^0.10.2",
+    "rimraf": "^2.6.1"
+  }
+}
