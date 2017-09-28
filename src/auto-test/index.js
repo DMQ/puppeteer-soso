@@ -1,7 +1,10 @@
+const path = require('path');
 const expect = require('chai').expect;
 const puppeteer = require('puppeteer');
 const devices = require('puppeteer/DeviceDescriptors');
 const account = require('./account')
+
+let sourceDir = path.join(__dirname, '../../source/auto-test');
 
 let browser;
 async function launchBrowser(headless) {
@@ -22,24 +25,26 @@ async function openPage() {
 	await page.emulate(iPhone6)
 
 	await page.goto(pageUrl)
-	await page.waitForSelector('#login_main')
-
-	let loginFrame = page.frames().find(f => {
-		return /^https?\:\/\/ui\.ptlogin2\.qq\.com\/cgi\-bin\/login/.test(f.url())
-	})
-
-
-	// 登录操作
-	await loginFrame.evaluate((uinSelector, pswSelector, uin, psw) => {
-		document.querySelector(uinSelector).setAttribute('value', uin)
-		document.querySelector(pswSelector).setAttribute('value', psw)
-	},uinSelector, pswSelector, account.uin, account.psw)
-
-	let btnElem =  await loginFrame.$(btnSelector);
-	btnElem.click();
-
-	await page.waitForNavigation()
 	await page.waitFor(2000)
+	
+	let needToLogin = await page.$('#login_main')
+
+	if (needToLogin) {
+		let loginFrame = page.frames().find(f => {
+			return /^https?\:\/\/ui\.ptlogin2\.qq\.com\/cgi\-bin\/login/.test(f.url())
+		})
+		// 登录操作
+		await loginFrame.evaluate((uinSelector, pswSelector, uin, psw) => {
+			document.querySelector(uinSelector).setAttribute('value', uin)
+			document.querySelector(pswSelector).setAttribute('value', psw)
+		},uinSelector, pswSelector, account.uin, account.psw)
+
+		let btnElem =  await loginFrame.$(btnSelector);
+		await btnElem.click();
+
+		// await page.waitForNavigation()
+		await page.waitFor(2000)
+	}
 
 	return {browser, page};
 }
@@ -48,31 +53,86 @@ async function openPage() {
 describe('gamecenter', function() {
 	describe('#首页：新游模块', function() {
 
-		(async function () {
-			let {browser, page} = await openPage();
-
 			it('正确展示新游模块', async function() {
-				this.timeout(10000)
+				this.timeout(15000)
 
-				// let {browser, page} = await openPage();
+				let {browser, page} = await openPage();
 
-				let hotGame = await page.evaluate(() => {
-					return document.querySelector('#new_container')
+				let [newGame, width] = await page.evaluate(() => {
+					let newCnt = document.querySelector('#new_container');
+					return [newCnt, newCnt && newCnt.offsetWith || 0]
 				})
 
-				page.close();
-
-				expect(hotGame).to.exist;
+				try {
+					expect(newGame).to.be.exist;
+					expect(width).to.be.above(0);
+					page.close();
+				} catch (e) {
+					await page.screenshot({path: `${sourceDir}/newGame1.png`, fullPage: true})
+					page.close();
+					throw e
+				}
 			})
 
 			it('预约功能是否正常', async function () {
-				this.timeout(10000)
+				this.timeout(20000)
 
-				// let {browser, page} = await openPage();
+				let {browser, page} = await openPage();
+
+				let reserveBtn = await page.$('.orderBtn')
+
+				try {
+					// 判断是否有预约按妞
+					expect(reserveBtn).to.be.exist;
+
+					let dialogBeforClick = await page.$('.appointment-dialog')
+					await reserveBtn.click();
+					await page.waitFor(2000);
+					let dialogAfterClick = await page.$('.appointment-dialog')
+
+					// 判断点击预约，弹窗是否正常
+					expect(dialogBeforClick).to.be.not.exist;
+					expect(dialogAfterClick).to.be.exist;
+
+					let dialogWidth = await page.evaluate(dialog => {
+						return dialog.offsetWith || 0
+					}, dialogAfterClick)
+
+					expect(dialogWidth).to.be.above(0)
+
+					// 判断弹窗提示是否正确
+					let titleTips = await page.evaluate(dialog => {
+						return dialog.querySelector('#optionDialogHeader').innerText
+					}, dialogAfterClick)
+
+					expect(titleTips).to.equal('预约成功')
+
+					// 判断按钮文案和样式是否变了
+					let [reserveBtnText, reserveBtnClass] = await page.evaluate(btn => {
+						return [btn.innerText, [...btn.classList]]
+					}, reserveBtn)
+
+					expect(reserveBtnText).to.equal('已预约')
+					expect(reserveBtnClass).to.include('disabled')
+					
+
+					// 判断弹窗的确认按钮是否正常关闭弹窗
+					let confirmBtn = page.$('#buttonsContainer button');
+					await confirmBtn.click();
+					await page.waitFor(200);
+
+					let dialogClass = page.evaluate(dialog => {
+						return [...dialog.classList]
+					}, dialogAfterClick)
+
+					expect(dialogClass).to.not.include('show')
+
+
+				} catch (e) {
+					await page.screenshot({path: `${sourceDir}/newGame2.png`, fullPage: true})
+					page.close();
+					throw e
+				}
 			})
-		
-		})()
-
-		
 	})
 })
