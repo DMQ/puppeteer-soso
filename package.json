@@ -8,9 +8,11 @@
   },
   "main": "index.js",
   "scripts": {
-    "es6": "node ./src/run.js ryf-es6",
-    "sf": "node ./src/run.js segmentfault",
-    "crawl": "node ./src/run.js ryf-es6 segmentfault"
+    "ppt": "node ./src/run.js",
+    "es6": "npm run ppt ryf-es6",
+    "sf": "npm run ppt segmentfault",
+    "ladder": "node ./src/ladder",
+    "test": "mocha ./src/auto-test"
   },
   "author": "kindeng",
   "license": "ISC",
@@ -20,5 +22,9 @@
   "dependencies": {
     "puppeteer": "^0.10.2",
     "rimraf": "^2.6.1"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^3.5.3"
   }
 }

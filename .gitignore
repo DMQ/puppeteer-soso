@@ -1,3 +1,4 @@
 /node_modules/
-/src/ladder.js
+/src/auto-test/account.js
+/src/ladder/
 npm-debug.log
