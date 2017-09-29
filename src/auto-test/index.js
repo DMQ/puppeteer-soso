@@ -7,7 +7,8 @@ const account = require('./account')
 let sourceDir = path.join(__dirname, '../../source/auto-test');
 
 let browser;
-async function launchBrowser(headless) {
+async function launchBrowser() {
+	let headless = process.argv[3] == 'show' ? false : true;
 	return browser ? browser : (browser = await puppeteer.launch({headless}));
 }
 
@@ -16,7 +17,7 @@ async function openPage() {
 	let pageUrl = 'http://m.gamecenter.qq.com/directout/index.v5?_bid=278&_wv=5127&gc_version=2&ADTAG=oldGamecenter&module=game';
 	let mqqUserAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_3_2 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Mobile/13F69 QQ/7.3.5.437 V1_IPH_SQ_7.3.5_1_APP_A Pixel/750 Core/UIWebView NetType/WIFI Mem/96';
 
-	let browser = await launchBrowser(false);
+	let browser = await launchBrowser();
 	let page = await browser.newPage();
 
 	// 设置webview
@@ -49,88 +50,104 @@ async function openPage() {
 	return {browser, page};
 }
 
-
 describe('gamecenter', function() {
 	describe('#首页：新游模块', function() {
+			before(async function() {
+				this.timeout(30000)
+				let {browser, page} = await openPage();
+				this.browser = browser;
+				this.page = page;
+			})
+
+			after(async function() {
+				await this.browser.close();
+			})
 
 			it('正确展示新游模块', async function() {
 				this.timeout(15000)
 
-				let {browser, page} = await openPage();
+				let page = this.page;
 
 				let [newGame, width] = await page.evaluate(() => {
 					let newCnt = document.querySelector('#new_container');
-					return [newCnt, newCnt && newCnt.offsetWith || 0]
+					return [newCnt, newCnt && newCnt.offsetWidth || 0]
 				})
 
 				try {
 					expect(newGame).to.be.exist;
 					expect(width).to.be.above(0);
-					page.close();
 				} catch (e) {
 					await page.screenshot({path: `${sourceDir}/newGame1.png`, fullPage: true})
-					page.close();
 					throw e
 				}
 			})
 
 			it('预约功能是否正常', async function () {
-				this.timeout(20000)
+				this.timeout(15000)
 
-				let {browser, page} = await openPage();
+				let orderBtnSelector = '.orderBtn';
+				let dialogSelector = '.appointment-dialog';
+				let dialogHeaderSelector = '#optionDialogHeader';
+				let confirmBtnSelector = '#buttonsContainer button';
 
-				let reserveBtn = await page.$('.orderBtn')
+				let page = this.page;
+				let orderBtn = await page.$(orderBtnSelector)
 
 				try {
 					// 判断是否有预约按妞
-					expect(reserveBtn).to.be.exist;
+					expect(orderBtn).to.be.exist;
 
-					let dialogBeforClick = await page.$('.appointment-dialog')
-					await reserveBtn.click();
+					let dialogBeforClick = await page.$(dialogSelector)
+					await orderBtn.click();
 					await page.waitFor(2000);
-					let dialogAfterClick = await page.$('.appointment-dialog')
+					let dialogAfterClick = await page.$(dialogSelector)
 
 					// 判断点击预约，弹窗是否正常
 					expect(dialogBeforClick).to.be.not.exist;
 					expect(dialogAfterClick).to.be.exist;
 
-					let dialogWidth = await page.evaluate(dialog => {
-						return dialog.offsetWith || 0
-					}, dialogAfterClick)
+					let dialogWidth = await page.evaluate(dialogSelector => {
+						let dialog = document.querySelector(dialogSelector)
+						return dialog.offsetWidth || 0
+					}, dialogSelector)
 
 					expect(dialogWidth).to.be.above(0)
 
 					// 判断弹窗提示是否正确
-					let titleTips = await page.evaluate(dialog => {
-						return dialog.querySelector('#optionDialogHeader').innerText
-					}, dialogAfterClick)
+					let titleTips = await page.evaluate(header => {
+						header = document.querySelector(header)
+						return header && header.innerText || ''
+					}, dialogHeaderSelector)
 
 					expect(titleTips).to.equal('预约成功')
 
-					// 判断按钮文案和样式是否变了
-					let [reserveBtnText, reserveBtnClass] = await page.evaluate(btn => {
-						return [btn.innerText, [...btn.classList]]
-					}, reserveBtn)
-
-					expect(reserveBtnText).to.equal('已预约')
-					expect(reserveBtnClass).to.include('disabled')
-					
 
 					// 判断弹窗的确认按钮是否正常关闭弹窗
-					let confirmBtn = page.$('#buttonsContainer button');
+					let confirmBtn = await page.$(confirmBtnSelector);
+
+					expect(confirmBtn).to.be.exist;
+
 					await confirmBtn.click();
 					await page.waitFor(200);
 
-					let dialogClass = page.evaluate(dialog => {
+					let dialogClass = await page.evaluate(dialogSelector => {
+						let dialog = document.querySelector(dialogSelector)
 						return [...dialog.classList]
-					}, dialogAfterClick)
+					}, dialogSelector)
 
 					expect(dialogClass).to.not.include('show')
 
+					// 判断按钮文案和样式是否变了
+					let [orderBtnText, orderBtnClass] = await page.evaluate(orderBtnSelector => {
+						let btn = document.querySelector(orderBtnSelector);
+						return [btn.innerText, [...btn.classList]]
+					}, orderBtnSelector)
+
+					expect(orderBtnText).to.equal('已预约')
+					expect(orderBtnClass).to.include('disabled')
 
 				} catch (e) {
 					await page.screenshot({path: `${sourceDir}/newGame2.png`, fullPage: true})
-					page.close();
 					throw e
 				}
 			})
