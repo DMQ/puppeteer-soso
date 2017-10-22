@@ -1,5 +1,6 @@
 const path = require('path');
 const expect = require('chai').expect;
+const fs = require('fs')
 const puppeteer = require('puppeteer');
 const devices = require('puppeteer/DeviceDescriptors');
 const account = require('./account')
@@ -50,6 +51,14 @@ async function openPage() {
 	return {browser, page};
 }
 
+function checkSourceDir() {
+	try {
+        fs.readdirSync(sourceDir)
+    } catch (e) {
+        fs.mkdirSync(sourceDir)
+    }
+}
+
 describe('gamecenter', function() {
 	describe('#首页：新游模块', function() {
 			before(async function() {
@@ -77,6 +86,7 @@ describe('gamecenter', function() {
 					expect(newGame).to.be.exist;
 					expect(width).to.be.above(0);
 				} catch (e) {
+					checkSourceDir()
 					await page.screenshot({path: `${sourceDir}/newGame1.png`, fullPage: true})
 					throw e
 				}
@@ -147,6 +157,7 @@ describe('gamecenter', function() {
 					expect(orderBtnClass).to.include('disabled')
 
 				} catch (e) {
+					checkSourceDir()
 					await page.screenshot({path: `${sourceDir}/newGame2.png`, fullPage: true})
 					throw e
 				}

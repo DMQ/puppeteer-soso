@@ -9,8 +9,8 @@
   "main": "index.js",
   "scripts": {
     "ppt": "node ./src/run.js",
-    "es6": "npm run ppt ryf-es6",
-    "sf": "npm run ppt segmentfault",
+    "es6": "node ./src/run.js ryf-es6",
+    "sf": "node ./src/run.js segmentfault",
     "ladder": "node ./src/ladder",
     "test": "mocha ./src/auto-test"
   },

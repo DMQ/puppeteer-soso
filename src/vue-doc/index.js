@@ -4,24 +4,15 @@
  */
 
 const path = require('path');
-const fs = require('fs');
 const Logger = require('../utils/logger')
+
 const prefix = '[ryf-es6]'
-
-let sourceDir = path.join(__dirname, '../../source/ryf-es6');
-
-function checkSourceDir() {
-    try {
-        fs.readdirSync(sourceDir)
-    } catch (e) {
-        fs.mkdirSync(sourceDir)
-    }
-}
 
 async function run(browser) {
     let page = await browser.newPage();
     let pageUrl = 'http://es6.ruanyifeng.com/';
     let listSelector = '#sidebar ol li a';
+    let sourceDir = path.join(__dirname, '../../source/ryf-es6');
     let waitTime = 1000;
 
     Logger.log(prefix, `opening ${pageUrl}...`);
@@ -59,7 +50,6 @@ async function run(browser) {
 
         Logger.log(prefix, `开始保存第${i+1}篇：${tag.title}`)
         try {
-            checkSourceDir()
             await page.pdf({ path: `${sourceDir}/${tag.title}.pdf` })
             Logger.log(prefix, `保存pdf成功`);
             // await page.screenshot({ path: `${sourceDir}/${tag.title}.png`, fullPage: true })

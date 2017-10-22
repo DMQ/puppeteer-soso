@@ -6,5 +6,5 @@
 
 1. git clone https://github.com/DMQ/puppeteer-soso.git
 2. npm i
-3. npm run crawl // more command can see package.json 
+3. npm run sf // more commands can be seen in package.json 
 

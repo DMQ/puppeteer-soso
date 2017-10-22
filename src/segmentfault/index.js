@@ -11,9 +11,14 @@ const prefix = '[segmentfault]'
 let pageUrl = 'http://segmentfault.com/blogs/hottest/weekly';
 let sourceDir = path.join(__dirname, '../../source/segmentfault');
 let keywords = ['js', 'javascript', 'node', 'css', 'html', '前端', 'vue', 'react', 'angular', '爬虫'];
-let blogCount = 50;
+let blogCount = 10;
 
 function writeFile(filename, data) {
+    try {
+        fs.readdirSync(sourceDir)
+    } catch (e) {
+        fs.mkdirSync(sourceDir)
+    }
     try {
         fs.writeFile(`${sourceDir}/${filename}`, data)
         Logger.log(prefix, `save segmentfault data success!`)
